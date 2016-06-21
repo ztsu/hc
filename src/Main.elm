@@ -1,43 +1,73 @@
 import Html.App
-import Html exposing (div, text, span, ul, li)
+import Html exposing (Html, div, text, span, ul, li)
 import Dict exposing (Dict)
+import Http
+import Task
+import Json.Decode exposing ((:=))
 
 type alias Probe =
   { name : String
   , group: String
   , url: String
+  , status: Maybe Int
   }
 
 
-probes =
-  [ Probe "test1" "group1" "http://localhost/1"
-  , Probe "test2" "group1" "http://localhost/2"
-  , Probe "test3" "" "http://localhost/3"
-  , Probe "test4" "group2" "http://localhost/4"
-  ]
+type alias Model =
+  { manifestUrl : String
+  , probes : List Probe
+  , errors : List String
+  }
 
 
-type alias Model = {
-  probes: List Probe
-}
+type Msg
+  = ReceiveProbes (List Probe)
+  | ReceiveProbesError Http.Error
 
 
-init =
-  ( Model probes
-  , Cmd.none
+type alias Flags = { manifestUrl : String }
+
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+  ( Model flags.manifestUrl [] []
+  , getProbes flags.manifestUrl
   )
 
 
-update model =
-  model
+getProbes url =
+  Task.perform ReceiveProbesError ReceiveProbes ( Http.get decodeProbes url )
+
+
+decodeProbes =
+  Json.Decode.list <| Json.Decode.object4 Probe
+    ( "name" := Json.Decode.string )
+    ( "group" := Json.Decode.string )
+    ( "url" := Json.Decode.string )
+    ( Json.Decode.maybe ("status" := Json.Decode.int) )
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+  case msg of
+    ReceiveProbes probes ->
+      ({ model | probes = probes }, Cmd.none )
+
+    ReceiveProbesError error ->
+      ({ model | errors = "Ошибка при получении манифест-файла" :: model.errors }, Cmd.none )
 
 
 subscriptions model =
   Sub.none
 
 
+view : Model -> Html Msg
 view model =
-  ul [] ( groupProbes probes |> Dict.toList |> List.map (\group -> viewGroup (snd group) (fst group)) )
+  div []
+    [ div [] ( List.map text model.errors )
+    , div [] [ text model.manifestUrl ]
+    , ul [] ( groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (snd group) (fst group)) )
+    ]
 
 
 groupProbes probes =
@@ -66,11 +96,20 @@ viewGroup probes name =
     appendProbes elements =
       elements ++ [ ul [] (List.map probe probes) ]
 
+    status status =
+      case status of
+        Just status -> toString status
+        Nothing -> "..."
+
     probe probe =
-      li [] [ text probe.name ]
+      li []
+      [ span [] [ text probe.name ]
+      , span [] [ text <| status probe.status ]
+      ]
   in
     li [] (appendProbes childs)
 
 
+main : Program Flags
 main =
-  Html.App.program { init = init, update = update, subscriptions = subscriptions, view = view}
+  Html.App.programWithFlags { init = init, update = update, subscriptions = subscriptions, view = view}
