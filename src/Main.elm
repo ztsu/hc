@@ -14,7 +14,7 @@ type alias Probe =
 
 
 type alias Model =
-  { manifestUrl : String
+  { manifestUrl : Maybe String
   , probes : List Probe
   , errors : List String
   }
@@ -25,14 +25,14 @@ type Msg
   | ReceiveProbesError Http.Error
 
 
-type alias Flags = { manifestUrl : String }
+type alias Flags = { manifestUrl : Maybe String }
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-  ( Model flags.manifestUrl [] []
-  , getProbes flags.manifestUrl
-  )
+  case flags.manifestUrl of
+    Just url -> ( Model flags.manifestUrl [] [], getProbes url )
+    Nothing -> ( Model flags.manifestUrl [] ["Не указан url до манифест-файла"], Cmd.none )
 
 
 getProbes url =
@@ -65,7 +65,6 @@ view : Model -> Html Msg
 view model =
   div []
     [ div [] ( List.map text model.errors )
-    , div [] [ text model.manifestUrl ]
     , ul [] ( groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (snd group) (fst group)) )
     ]
 
