@@ -23,6 +23,8 @@ type alias Model =
 type Msg
   = ReceiveProbes (List Probe)
   | ReceiveProbesError Http.Error
+  | TouchProbeResult String Int
+  | TouchProbeError Http.RawError
 
 
 type alias Flags = { manifestUrl : Maybe String }
@@ -39,6 +41,33 @@ getProbes url =
   Task.perform ReceiveProbesError ReceiveProbes ( Http.get decodeProbes url )
 
 
+touchProbe maybeUrl =
+  let
+    req url =
+    { verb = "GET"
+    , headers = []
+    , url = url
+    , body = Http.empty
+    }
+  in
+    case maybeUrl of
+      Just probe ->
+        Http.send Http.defaultSettings (req probe.url)
+          |> Task.map (\r -> r.status)
+          |> Task.perform TouchProbeError (TouchProbeResult probe.url)
+
+      Nothing -> Cmd.none
+
+touchNextProbe probes skipUrl =
+  let
+    f probe =
+      case probe.status of
+        Just status -> False
+        Nothing -> not (probe.url == skipUrl)
+  in
+    List.filter f probes |> List.head |> touchProbe
+
+
 decodeProbes =
   Json.Decode.list <| Json.Decode.object4 Probe
     ( "name" := Json.Decode.string )
@@ -51,10 +80,16 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
     ReceiveProbes probes ->
-      ({ model | probes = probes }, Cmd.none )
+      ({ model | probes = probes }, touchNextProbe probes "")
 
     ReceiveProbesError error ->
       ({ model | errors = "Ошибка при получении манифест-файла" :: model.errors }, Cmd.none )
+
+    TouchProbeResult url status ->
+      ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just status } else probe) }, touchNextProbe model.probes url)
+
+    TouchProbeError _ ->
+      ({ model | errors = "Ошибка при проверке" :: model.errors }, Cmd.none )
 
 
 subscriptions model =
