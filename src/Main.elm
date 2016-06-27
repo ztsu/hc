@@ -9,7 +9,7 @@ type alias Probe =
   { name : String
   , group: String
   , url: String
-  , status: Maybe Int
+  , status: Maybe (Result String Int)
   }
 
 
@@ -24,7 +24,7 @@ type Msg
   = ReceiveProbes (List Probe)
   | ReceiveProbesError Http.Error
   | TouchProbeResult String Int
-  | TouchProbeError Http.RawError
+  | TouchProbeError String Http.RawError
 
 
 type alias Flags = { manifestUrl : Maybe String }
@@ -41,6 +41,14 @@ getProbes url =
   Task.perform ReceiveProbesError ReceiveProbes ( Http.get decodeProbes url )
 
 
+
+decodeProbes =
+  Json.Decode.list <| Json.Decode.object4 Probe
+    ( "name" := Json.Decode.string )
+    ( "group" := Json.Decode.string )
+    ( "url" := Json.Decode.string )
+    ( Json.Decode.maybe <| Json.Decode.fail "" )
+
 touchProbe maybeUrl =
   let
     req url =
@@ -54,7 +62,7 @@ touchProbe maybeUrl =
       Just probe ->
         Http.send Http.defaultSettings (req probe.url)
           |> Task.map (\r -> r.status)
-          |> Task.perform TouchProbeError (TouchProbeResult probe.url)
+          |> Task.perform (TouchProbeError probe.url) (TouchProbeResult probe.url)
 
       Nothing -> Cmd.none
 
@@ -68,12 +76,6 @@ touchNextProbe probes skipUrl =
     List.filter f probes |> List.head |> touchProbe
 
 
-decodeProbes =
-  Json.Decode.list <| Json.Decode.object4 Probe
-    ( "name" := Json.Decode.string )
-    ( "group" := Json.Decode.string )
-    ( "url" := Json.Decode.string )
-    ( Json.Decode.maybe ("status" := Json.Decode.int) )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -86,10 +88,10 @@ update msg model =
       ({ model | errors = "Ошибка при получении манифест-файла" :: model.errors }, Cmd.none )
 
     TouchProbeResult url status ->
-      ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just status } else probe) }, touchNextProbe model.probes url)
+      ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just (Ok status) } else probe) }, touchNextProbe model.probes url)
 
-    TouchProbeError _ ->
-      ({ model | errors = "Ошибка при проверке" :: model.errors }, Cmd.none )
+    TouchProbeError url _ ->
+      ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just (Err "Error") } else probe) }, Cmd.none )
 
 
 subscriptions model =
@@ -132,7 +134,10 @@ viewGroup probes name =
 
     status status =
       case status of
-        Just status -> toString status
+        Just status ->
+          case status of
+            Ok value -> toString value
+            Err message -> message
         Nothing -> "..."
 
     probe probe =
