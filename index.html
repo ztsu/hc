@@ -3,6 +3,87 @@
   <head>
     <meta charset="utf-8"/>
     <title>Health Checker</title>
+    <style type="text/css">
+
+      body {
+        font: 13px/1.5 Helvetica, Arial, sans-serif;
+        color: #333;
+        width: 500px;
+        margin: 0 auto;
+      }
+
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+        line-height: 1.8;
+      }
+
+      input[type=checkbox] {
+        padding: 0;
+      }
+
+      hr {
+        border-bottom: 0;
+      }
+
+      h1 {
+        color: #369;
+        font-size: 20px;
+      }
+
+      h2 {
+        font-size: 14px;
+        color: #333;
+        margin-top: 20px;
+        float: left;
+      }
+
+      .error {
+        color: #c30;
+      }
+
+      .probes {
+        clear: left;
+      }
+
+      .probe {
+        line-height: 1.8;
+        font-family: Courier, "Courier New", monospace;
+        clear: left;
+      }
+
+      .probe-name {
+        width: 400px;
+        float: left;
+      }
+
+      .probe-status {
+        width: 100px;
+        float: left;
+        text-align: right;
+      }
+
+      .badge {
+        padding: 0px 5px;
+        border: #eee 1px solid;
+        border-radius: 3px;
+        text-transform: uppercase;
+        font-size: 12px;
+        white-space: no-wrap;
+        display: inline;
+      }
+
+      .badge.ok {
+        border-color: #396;
+        color: #396;
+      }
+
+      .badge.error {
+        border-color: #c30;
+        color: #c30;
+      }
+    </style>
   </head>
   <body>
     <script src="index.js"></script>

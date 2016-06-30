@@ -1,5 +1,6 @@
 import Html.App
-import Html exposing (Html, div, text, span, ul, li)
+import Html exposing (Html, div, text, span, ul, li, h1, h2)
+import Html.Attributes exposing (class)
 import Dict exposing (Dict)
 import Http
 import Task
@@ -100,10 +101,20 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-  div []
-    [ div [] ( List.map text model.errors )
-    , ul [] ( groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (snd group) (fst group)) )
-    ]
+  let
+    header =
+      h1 [] [ text "billing.ngs.ru" ]
+    errors =
+      if List.length model.errors == 0
+        then []
+      else
+        div [ class "errors" ] ( List.map text model.errors) :: []
+
+    groups =
+      ul [ class "groups" ] (groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (snd group) (fst group))) :: []
+
+  in
+    div [] <| header :: errors ++ groups
 
 
 groupProbes probes =
@@ -126,11 +137,13 @@ groupProbes probes =
 viewGroup probes name =
   let
     childs =
-      [ div [] [ text name ]
-      ]
+      if not (name == "") then
+        [ h2 [ class "group-name" ] [ text name ] ]
+      else
+        []
 
     appendProbes elements =
-      elements ++ [ ul [] (List.map probe probes) ]
+      elements ++ [ ul [ class "probes" ] (List.map probe probes) ]
 
     status status =
       case status of
@@ -140,13 +153,23 @@ viewGroup probes name =
             Err message -> message
         Nothing -> "..."
 
+    badgeClassName status =
+      case status of
+        Just status ->
+          case status of
+            Ok value -> "badge ok"
+            Err message -> "badge error"
+        Nothing -> "badge pending"
+
     probe probe =
-      li []
-      [ span [] [ text probe.name ]
-      , span [] [ text <| status probe.status ]
+      li [ class "probe" ]
+      [ div [ class "probe-name" ] [ text probe.name ]
+      , div [ class "probe-status" ]
+        [ div [ class <| badgeClassName probe.status ] [ text <| status probe.status ]
+        ]
       ]
   in
-    li [] (appendProbes childs)
+    li [ class "group" ] (appendProbes childs)
 
 
 main : Program Flags
