@@ -88,7 +88,20 @@
   <body>
     <script src="index.js"></script>
     <script type="text/javascript">
-      Elm.Main.fullscreen({manifestUrl: "http://localhost:8080/manifest.json"});
+        var query = window.location.search.substr(1).split('&').reduce(
+          function (acc, param) {
+            var pair = param.split("=", 2);
+
+            if (pair.length === 2) {
+              acc[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+            }
+
+          return acc;
+          },
+          {}
+        );
+
+      Elm.Main.fullscreen({manifestUrl: query.manifest || null});
     </script>
   </body>
 </html>
