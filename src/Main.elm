@@ -42,7 +42,6 @@ getProbes url =
   Task.perform ReceiveProbesError ReceiveProbes ( Http.get decodeProbes url )
 
 
-
 decodeProbes =
   Json.Decode.list <| Json.Decode.object4 Probe
     ( "name" := Json.Decode.string )
@@ -67,32 +66,35 @@ touchProbe maybeUrl =
 
       Nothing -> Cmd.none
 
-touchNextProbe probes skipUrl =
+touchNextProbe probes =
   let
-    f probe =
+    hasNothingStatus probe =
       case probe.status of
         Just status -> False
-        Nothing -> not (probe.url == skipUrl)
+        Nothing -> True
   in
-    List.filter f probes |> List.head |> touchProbe
-
-
+    probes |> List.filter hasNothingStatus |> List.head |> touchProbe
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  case msg of
-    ReceiveProbes probes ->
-      ({ model | probes = probes }, touchNextProbe probes "")
+  let
+    findProbeAndUpdateStatus url status =
+      model.probes |> List.map ( \probe -> if probe.url == url then { probe | status = Just (Ok status) } else probe )
 
-    ReceiveProbesError error ->
-      ({ model | errors = "Ошибка при получении манифест-файла" :: model.errors }, Cmd.none )
+  in
+    case msg of
+      ReceiveProbes probes ->
+        ({ model | probes = probes }, touchNextProbe probes)
 
-    TouchProbeResult url status ->
-      ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just (Ok status) } else probe) }, touchNextProbe model.probes url)
+      ReceiveProbesError error ->
+        ({ model | errors = "Ошибка при получении манифест-файла" :: model.errors }, Cmd.none )
 
-    TouchProbeError url _ ->
-      ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just (Err "Error") } else probe) }, Cmd.none )
+      TouchProbeResult url status ->
+        ({ model | probes = findProbeAndUpdateStatus url status}, findProbeAndUpdateStatus url status |> touchNextProbe)
+
+      TouchProbeError url _ ->
+        ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just (Err "Error") } else probe) }, Cmd.none )
 
 
 subscriptions model =
