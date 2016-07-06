@@ -105,7 +105,7 @@ view : Model -> Html Msg
 view model =
   let
     header =
-      h1 [] [ text "billing.ngs.ru" ]
+      h1 [] [ text "Report" ]
     errors =
       if List.length model.errors == 0
         then []
