@@ -38,10 +38,12 @@ init flags =
     Nothing -> ( Model flags.manifestUrl [] ["Не указан url до манифест-файла"], Cmd.none )
 
 
+getProbes : String -> Cmd Msg
 getProbes url =
   Task.perform ReceiveProbesError ReceiveProbes ( Http.get decodeProbes url )
 
 
+decodeProbes : Json.Decode.Decoder (List Probe)
 decodeProbes =
   Json.Decode.list <| Json.Decode.object4 Probe
     ( "name" := Json.Decode.string )
@@ -49,6 +51,8 @@ decodeProbes =
     ( "url" := Json.Decode.string )
     ( Json.Decode.maybe <| Json.Decode.fail "" )
 
+
+touchProbe : Maybe Probe -> Cmd Msg
 touchProbe maybeUrl =
   let
     req url =
@@ -66,6 +70,7 @@ touchProbe maybeUrl =
 
       Nothing -> Cmd.none
 
+touchNextProbe : List Probe -> Cmd Msg
 touchNextProbe probes =
   let
     hasNothingStatus probe =
@@ -97,6 +102,7 @@ update msg model =
         ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just (Err "Error") } else probe) }, Cmd.none )
 
 
+subscriptions : Model -> Sub a
 subscriptions model =
   Sub.none
 
@@ -119,6 +125,7 @@ view model =
     div [] <| header :: errors ++ groups
 
 
+groupProbes : List Probe -> Dict String (List Probe)
 groupProbes probes =
   let
     update probe all =
@@ -136,6 +143,7 @@ groupProbes probes =
     List.foldr reduce Dict.empty probes
 
 
+viewGroup : List Probe -> String -> Html Msg
 viewGroup probes name =
   let
     childs =
