@@ -115,19 +115,30 @@ view : Model -> Html Msg
 view model =
   let
     header =
-      h1 [] [ text "Report" ]
+      case List.length model.probes of
+        0 ->
+          []
+
+        _ ->
+          h1 [] [ text "Report" ] :: []
 
     errors =
-      if List.length model.errors == 0 then
-        []
-      else
-        div [ class "errors" ] ( List.map text model.errors) :: []
+      case List.length model.errors of
+        0 ->
+          []
+
+        _ ->
+          div [ class "errors" ] ( List.map text model.errors) :: []
 
     groups =
-      ul [ class "groups" ] (groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (snd group) (fst group))) :: []
+      case List.length model.probes of
+        0 -> []
+
+        _ ->
+          ul [ class "groups" ] ( groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (snd group) (fst group)) ) :: []
 
   in
-    div [] <| header :: errors ++ groups
+    div [] <| errors ++ header ++ groups
 
 
 groupProbes : List Probe -> Dict String (List Probe)
