@@ -6,6 +6,10 @@ import Http
 import Task
 import Json.Decode exposing ((:=))
 
+
+-- Model
+
+
 type alias Probe =
   { name : String
   , group: String
@@ -33,52 +37,23 @@ type alias Flags = { manifestUrl : Maybe String }
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-  case flags.manifestUrl of
-    Just url -> ( Model flags.manifestUrl [] [], getProbes url )
-    Nothing -> ( Model flags.manifestUrl [] ["Не указан url до манифест-файла"], Cmd.none )
-
-
-getProbes : String -> Cmd Msg
-getProbes url =
-  Task.perform ReceiveProbesError ReceiveProbes ( Http.get decodeProbes url )
-
-
-decodeProbes : Json.Decode.Decoder (List Probe)
-decodeProbes =
-  Json.Decode.list <| Json.Decode.object4 Probe
-    ( "name" := Json.Decode.string )
-    ( "group" := Json.Decode.string )
-    ( "url" := Json.Decode.string )
-    ( Json.Decode.maybe <| Json.Decode.fail "" )
-
-
-touchProbe : Maybe Probe -> Cmd Msg
-touchProbe maybeUrl =
   let
-    req url =
-    { verb = "GET"
-    , headers = []
-    , url = url
-    , body = Http.empty
-    }
-  in
-    case maybeUrl of
-      Just probe ->
-        Http.send Http.defaultSettings (req probe.url)
-          |> Task.map (\r -> r.status)
-          |> Task.perform (TouchProbeError probe.url) (TouchProbeResult probe.url)
+    decodeProbes =
+      Json.Decode.list <| Json.Decode.object4 Probe
+        ( "name" := Json.Decode.string )
+        ( "group" := Json.Decode.string )
+        ( "url" := Json.Decode.string )
+        ( Json.Decode.maybe <| Json.Decode.fail "" )
 
-      Nothing -> Cmd.none
-
-touchNextProbe : List Probe -> Cmd Msg
-touchNextProbe probes =
-  let
-    hasNothingStatus probe =
-      case probe.status of
-        Just status -> False
-        Nothing -> True
+    getProbes url =
+      Task.perform ReceiveProbesError ReceiveProbes ( Http.get decodeProbes url )
   in
-    probes |> List.filter hasNothingStatus |> List.head |> touchProbe
+    case flags.manifestUrl of
+      Just url ->
+        ( Model flags.manifestUrl [] [], getProbes url )
+
+      Nothing ->
+        ( Model flags.manifestUrl [] ["Не указан url до манифест-файла"], Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -86,6 +61,37 @@ update msg model =
   let
     findProbeAndUpdateStatus url status =
       model.probes |> List.map ( \probe -> if probe.url == url then { probe | status = Just (Ok status) } else probe )
+
+    hasNothingStatus : Probe -> Bool
+    hasNothingStatus probe =
+      case probe.status of
+        Just status ->
+          False
+
+        Nothing ->
+          True
+
+    makeRequest : String -> { body : Http.Body, headers : List a, url : String, verb : String }
+    makeRequest url =
+      { verb = "GET"
+      , headers = []
+      , url = url
+      , body = Http.empty
+      }
+
+    touchProbe : Maybe Probe -> Cmd Msg
+    touchProbe maybeUrl =
+      case maybeUrl of
+        Just probe ->
+          Http.send Http.defaultSettings (makeRequest probe.url)
+            |> Task.map (\r -> r.status)
+            |> Task.perform (TouchProbeError probe.url) (TouchProbeResult probe.url)
+
+        Nothing -> Cmd.none
+
+    touchNextProbe : List Probe -> Cmd Msg
+    touchNextProbe probes =
+      touchProbe <| List.head <| List.filter hasNothingStatus <| probes
 
   in
     case msg of
@@ -102,9 +108,7 @@ update msg model =
         ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just (Err "Error") } else probe) }, Cmd.none )
 
 
-subscriptions : Model -> Sub a
-subscriptions model =
-  Sub.none
+-- View
 
 
 view : Model -> Html Msg
@@ -112,9 +116,10 @@ view model =
   let
     header =
       h1 [] [ text "Report" ]
+
     errors =
-      if List.length model.errors == 0
-        then []
+      if List.length model.errors == 0 then
+        []
       else
         div [ class "errors" ] ( List.map text model.errors) :: []
 
@@ -130,8 +135,11 @@ groupProbes probes =
   let
     update probe all =
       case all of
-        Just all -> Just ([probe] ++ all)
-        Nothing -> Nothing
+        Just all ->
+          Just ([probe] ++ all)
+
+        Nothing ->
+          Nothing
 
     reduce probe acc =
       if Dict.member probe.group acc then
@@ -182,6 +190,14 @@ viewGroup probes name =
     li [ class "group" ] (appendProbes childs)
 
 
+--
+
+
 main : Program Flags
 main =
-  Html.App.programWithFlags { init = init, update = update, subscriptions = subscriptions, view = view}
+  Html.App.programWithFlags
+    { init = init
+    , update = update
+    , subscriptions = \m -> Sub.none
+    , view = view
+    }
