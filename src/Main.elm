@@ -60,7 +60,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   let
     findProbeAndUpdateStatus url status =
-      model.probes |> List.map ( \probe -> if probe.url == url then { probe | status = Just (Ok status) } else probe )
+      model.probes |> List.map ( \probe -> if probe.url == url then { probe | status = Just status } else probe )
 
     hasNothingStatus : Probe -> Bool
     hasNothingStatus probe =
@@ -99,13 +99,13 @@ update msg model =
         ({ model | probes = probes }, touchNextProbe probes)
 
       ReceiveProbesError error ->
-        ({ model | errors = "Ошибка при получении манифест-файла" :: model.errors }, Cmd.none )
+        ({ model | errors = "Ошибка при получении манифест-файла" :: model.errors }, Cmd.none)
 
       TouchProbeResult url status ->
-        ({ model | probes = findProbeAndUpdateStatus url status}, findProbeAndUpdateStatus url status |> touchNextProbe)
+        ({ model | probes = findProbeAndUpdateStatus url (Ok status)}, findProbeAndUpdateStatus url (Ok status) |> touchNextProbe)
 
       TouchProbeError url _ ->
-        ({ model | probes = model.probes |> List.map (\probe -> if probe.url == url then { probe | status = Just (Err "Error") } else probe) }, Cmd.none )
+        ({ model | probes = findProbeAndUpdateStatus url (Err "Error")}, findProbeAndUpdateStatus url (Err "Error") |> touchNextProbe)
 
 
 -- View
