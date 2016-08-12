@@ -8459,7 +8459,8 @@ var _ztsu$health_checker$Main$viewGroup = F2(
 			if (_p0.ctor === 'Just') {
 				var _p1 = _p0._0;
 				if (_p1.ctor === 'Ok') {
-					return 'badge ok';
+					var _p2 = _p1._0;
+					return ((_elm_lang$core$Native_Utils.cmp(_p2, 200) > -1) && (_elm_lang$core$Native_Utils.cmp(_p2, 300) < 0)) ? 'badge ok' : 'badge error';
 				} else {
 					return 'badge error';
 				}
@@ -8468,13 +8469,14 @@ var _ztsu$health_checker$Main$viewGroup = F2(
 			}
 		};
 		var status = function (status) {
-			var _p2 = status;
-			if (_p2.ctor === 'Just') {
-				var _p3 = _p2._0;
-				if (_p3.ctor === 'Ok') {
-					return _elm_lang$core$Basics$toString(_p3._0);
+			var _p3 = status;
+			if (_p3.ctor === 'Just') {
+				var _p4 = _p3._0;
+				if (_p4.ctor === 'Ok') {
+					var _p5 = _p4._0;
+					return ((_elm_lang$core$Native_Utils.cmp(_p5, 200) > -1) && (_elm_lang$core$Native_Utils.cmp(_p5, 300) < 0)) ? 'Ok' : 'Fail';
 				} else {
-					return _p3._0;
+					return 'Fail';
 				}
 			} else {
 				return '...';
@@ -8563,14 +8565,14 @@ var _ztsu$health_checker$Main$viewGroup = F2(
 var _ztsu$health_checker$Main$groupProbes = function (probes) {
 	var update = F2(
 		function (probe, all) {
-			var _p4 = all;
-			if (_p4.ctor === 'Just') {
+			var _p6 = all;
+			if (_p6.ctor === 'Just') {
 				return _elm_lang$core$Maybe$Just(
 					A2(
 						_elm_lang$core$Basics_ops['++'],
 						_elm_lang$core$Native_List.fromArray(
 							[probe]),
-						_p4._0));
+						_p6._0));
 			} else {
 				return _elm_lang$core$Maybe$Nothing;
 			}
@@ -8592,8 +8594,8 @@ var _ztsu$health_checker$Main$groupProbes = function (probes) {
 };
 var _ztsu$health_checker$Main$view = function (model) {
 	var groups = function () {
-		var _p5 = _elm_lang$core$List$length(model.probes);
-		if (_p5 === 0) {
+		var _p7 = _elm_lang$core$List$length(model.probes);
+		if (_p7 === 0) {
 			return _elm_lang$core$Native_List.fromArray(
 				[]);
 		} else {
@@ -8620,8 +8622,8 @@ var _ztsu$health_checker$Main$view = function (model) {
 		}
 	}();
 	var errors = function () {
-		var _p6 = _elm_lang$core$List$length(model.errors);
-		if (_p6 === 0) {
+		var _p8 = _elm_lang$core$List$length(model.errors);
+		if (_p8 === 0) {
 			return _elm_lang$core$Native_List.fromArray(
 				[]);
 		} else {
@@ -8639,8 +8641,8 @@ var _ztsu$health_checker$Main$view = function (model) {
 		}
 	}();
 	var header = function () {
-		var _p7 = _elm_lang$core$List$length(model.probes);
-		if (_p7 === 0) {
+		var _p9 = _elm_lang$core$List$length(model.probes);
+		if (_p9 === 0) {
 			return _elm_lang$core$Native_List.fromArray(
 				[]);
 		} else {
@@ -8698,13 +8700,13 @@ var _ztsu$health_checker$Main$update = F2(
 			};
 		};
 		var touchProbe = function (maybeUrl) {
-			var _p8 = maybeUrl;
-			if (_p8.ctor === 'Just') {
-				var _p9 = _p8._0;
+			var _p10 = maybeUrl;
+			if (_p10.ctor === 'Just') {
+				var _p11 = _p10._0;
 				return A3(
 					_elm_lang$core$Task$perform,
-					_ztsu$health_checker$Main$TouchProbeError(_p9.url),
-					_ztsu$health_checker$Main$TouchProbeResult(_p9.url),
+					_ztsu$health_checker$Main$TouchProbeError(_p11.url),
+					_ztsu$health_checker$Main$TouchProbeResult(_p11.url),
 					A2(
 						_elm_lang$core$Task$map,
 						function (r) {
@@ -8713,14 +8715,14 @@ var _ztsu$health_checker$Main$update = F2(
 						A2(
 							_evancz$elm_http$Http$send,
 							_evancz$elm_http$Http$defaultSettings,
-							makeRequest(_p9.url))));
+							makeRequest(_p11.url))));
 			} else {
 				return _elm_lang$core$Platform_Cmd$none;
 			}
 		};
 		var hasNothingStatus = function (probe) {
-			var _p10 = probe.status;
-			if (_p10.ctor === 'Just') {
+			var _p12 = probe.status;
+			if (_p12.ctor === 'Just') {
 				return false;
 			} else {
 				return true;
@@ -8744,16 +8746,16 @@ var _ztsu$health_checker$Main$update = F2(
 					},
 					model.probes);
 			});
-		var _p11 = msg;
-		switch (_p11.ctor) {
+		var _p13 = msg;
+		switch (_p13.ctor) {
 			case 'ReceiveProbes':
-				var _p12 = _p11._0;
+				var _p14 = _p13._0;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{probes: _p12}),
-					_1: touchNextProbe(_p12)
+						{probes: _p14}),
+					_1: touchNextProbe(_p14)
 				};
 			case 'ReceiveProbesError':
 				return {
@@ -8766,8 +8768,8 @@ var _ztsu$health_checker$Main$update = F2(
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'TouchProbeResult':
-				var _p14 = _p11._0;
-				var _p13 = _p11._1;
+				var _p16 = _p13._0;
+				var _p15 = _p13._1;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
@@ -8775,17 +8777,17 @@ var _ztsu$health_checker$Main$update = F2(
 						{
 							probes: A2(
 								findProbeAndUpdateStatus,
-								_p14,
-								_elm_lang$core$Result$Ok(_p13))
+								_p16,
+								_elm_lang$core$Result$Ok(_p15))
 						}),
 					_1: touchNextProbe(
 						A2(
 							findProbeAndUpdateStatus,
-							_p14,
-							_elm_lang$core$Result$Ok(_p13)))
+							_p16,
+							_elm_lang$core$Result$Ok(_p15)))
 				};
 			default:
-				var _p15 = _p11._0;
+				var _p17 = _p13._0;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
@@ -8793,13 +8795,13 @@ var _ztsu$health_checker$Main$update = F2(
 						{
 							probes: A2(
 								findProbeAndUpdateStatus,
-								_p15,
+								_p17,
 								_elm_lang$core$Result$Err('Error'))
 						}),
 					_1: touchNextProbe(
 						A2(
 							findProbeAndUpdateStatus,
-							_p15,
+							_p17,
 							_elm_lang$core$Result$Err('Error')))
 				};
 		}
@@ -8827,8 +8829,8 @@ var _ztsu$health_checker$Main$init = function (flags) {
 			_ztsu$health_checker$Main$ReceiveProbes,
 			A2(_evancz$elm_http$Http$get, decodeProbes, url));
 	};
-	var _p16 = flags.manifestUrl;
-	if (_p16.ctor === 'Just') {
+	var _p18 = flags.manifestUrl;
+	if (_p18.ctor === 'Just') {
 		return {
 			ctor: '_Tuple2',
 			_0: A3(
@@ -8838,7 +8840,7 @@ var _ztsu$health_checker$Main$init = function (flags) {
 					[]),
 				_elm_lang$core$Native_List.fromArray(
 					[])),
-			_1: getProbes(_p16._0)
+			_1: getProbes(_p18._0)
 		};
 	} else {
 		return {
