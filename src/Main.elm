@@ -178,16 +178,29 @@ viewGroup probes name =
       case status of
         Just status ->
           case status of
-            Ok value -> toString value
-            Err message -> message
+            Ok value ->
+                if value >= 200 && value < 300 then
+                  "Ok"
+                else
+                  "Fail"
+
+            Err message -> "Fail"
+
         Nothing -> "..."
 
     badgeClassName status =
       case status of
         Just status ->
           case status of
-            Ok value -> "badge ok"
-            Err message -> "badge error"
+            Ok value ->
+                if value >= 200 && value < 300 then
+                  "badge ok"
+                else
+                  "badge error"
+
+            Err message ->
+              "badge error"
+
         Nothing -> "badge pending"
 
     probe probe =
