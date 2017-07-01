@@ -1,10 +1,11 @@
-import Html.App
+import Html
 import Html exposing (Html, div, text, span, ul, li, h1, h2)
 import Html.Attributes exposing (class)
 import Dict exposing (Dict)
 import Http
 import Task
-import Json.Decode exposing ((:=))
+import Json.Decode exposing (field)
+import Tuple
 
 
 -- Model
@@ -29,7 +30,7 @@ type Msg
   = ReceiveProbes (List Probe)
   | ReceiveProbesError Http.Error
   | TouchProbeResult String Int
-  | TouchProbeError String Http.RawError
+  | TouchProbeError String Http.Error
 
 
 type alias Flags = { manifestUrl : Maybe String }
@@ -39,14 +40,22 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
   let
     decodeProbes =
-      Json.Decode.list <| Json.Decode.object4 Probe
-        ( "name" := Json.Decode.string )
-        ( "group" := Json.Decode.string )
-        ( "url" := Json.Decode.string )
+      Json.Decode.list <| Json.Decode.map4 Probe
+        ( field "name" Json.Decode.string )
+        ( field "group" Json.Decode.string )
+        ( field "url" Json.Decode.string )
         ( Json.Decode.maybe <| Json.Decode.fail "" )
 
+    handleResult result =
+      case result of
+        Ok probes ->
+          ReceiveProbes probes
+
+        Err error ->
+          ReceiveProbesError error
+
     getProbes url =
-      Task.perform ReceiveProbesError ReceiveProbes ( Http.get decodeProbes url )
+      Http.send handleResult <| Http.get url decodeProbes
   in
     case flags.manifestUrl of
       Just url ->
@@ -71,21 +80,31 @@ update msg model =
         Nothing ->
           True
 
-    makeRequest : String -> { body : Http.Body, headers : List a, url : String, verb : String }
+    makeRequest : String -> Http.Request Int
     makeRequest url =
-      { verb = "GET"
-      , headers = []
-      , url = url
-      , body = Http.empty
-      }
+      Http.request
+        { method = "GET"
+        , headers = []
+        , url = url
+        , body = Http.emptyBody
+        , expect = Http.expectStringResponse (\res -> Result.Ok res.status.code)
+        , timeout = Nothing
+        , withCredentials = False
+        }
+
+    handleResult url result =
+      case result of
+        Ok status -> 
+          TouchProbeResult url status
+
+        Err error ->
+          TouchProbeError url error
 
     touchProbe : Maybe Probe -> Cmd Msg
     touchProbe maybeUrl =
       case maybeUrl of
         Just probe ->
-          Http.send Http.defaultSettings (makeRequest probe.url)
-            |> Task.map (\r -> r.status)
-            |> Task.perform (TouchProbeError probe.url) (TouchProbeResult probe.url)
+          Http.send (handleResult probe.url) (makeRequest probe.url)
 
         Nothing -> Cmd.none
 
@@ -135,7 +154,7 @@ view model =
         0 -> []
 
         _ ->
-          ul [ class "groups" ] ( groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (snd group) (fst group)) ) :: []
+          ul [ class "groups" ] ( groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (Tuple.second group) (Tuple.first group)) ) :: []
 
   in
     div [] <| errors ++ header ++ groups
@@ -217,9 +236,9 @@ viewGroup probes name =
 --
 
 
-main : Program Flags
+main : Program Flags Model Msg
 main =
-  Html.App.programWithFlags
+  Html.programWithFlags
     { init = init
     , update = update
     , subscriptions = \m -> Sub.none
