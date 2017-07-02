@@ -1,7 +1,7 @@
 module View exposing (..)
 
 import Dict exposing (Dict)
-import Html exposing (Html, div, h1, h2, li, span, text, ul)
+import Html exposing (Html, div, h2, li, span, text, ul)
 import Html.Attributes exposing (class)
 import Model exposing (Model, Msg, Probe)
 
@@ -9,14 +9,6 @@ import Model exposing (Model, Msg, Probe)
 view : Model -> Html Msg
 view model =
     let
-        header =
-            case List.length model.probes of
-                0 ->
-                    []
-
-                _ ->
-                    h1 [] [ text "Report" ] :: []
-
         errors =
             case List.length model.errors of
                 0 ->
@@ -33,7 +25,7 @@ view model =
                 _ ->
                     ul [ class "groups" ] (groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (Tuple.second group) (Tuple.first group))) :: []
     in
-    div [] <| errors ++ header ++ groups
+    div [] <| errors ++ groups
 
 
 groupProbes : List Probe -> Dict String (List Probe)
