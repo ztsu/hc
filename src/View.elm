@@ -25,7 +25,7 @@ view model =
                 _ ->
                     ul [ class "groups" ] (groupProbes model.probes |> Dict.toList |> List.map (\group -> viewGroup (Tuple.second group) (Tuple.first group))) :: []
     in
-    div [] <| errors ++ groups
+    div [ class "container" ] <| errors ++ groups
 
 
 groupProbes : List Probe -> Dict String (List Probe)
