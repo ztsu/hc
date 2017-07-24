@@ -57,7 +57,7 @@ init flags =
             ( Model flags.manifestUrl [] [], getProbes url )
 
         Nothing ->
-            ( Model flags.manifestUrl [] [ "Не указан url до манифест-файла" ], Cmd.none )
+            ( Model flags.manifestUrl [] [ "A path to file manifest is not specified" ], Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -120,7 +120,7 @@ update msg model =
             ( { model | probes = probes }, touchNextProbe probes )
 
         ReceiveProbesError error ->
-            ( { model | errors = "Ошибка при получении манифест-файла" :: model.errors }, Cmd.none )
+            ( { model | errors = "Couldn't get a file manifest" :: model.errors }, Cmd.none )
 
         TouchProbeResult url status ->
             ( { model | probes = findProbeAndUpdateStatus url (Ok status) }, findProbeAndUpdateStatus url (Ok status) |> touchNextProbe )
